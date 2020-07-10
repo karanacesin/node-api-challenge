@@ -14,21 +14,13 @@ router.get('/', (req, res) => {
     })
   })
 
-  router.get('/:id', (req, res) => {
-    const {id} = req.params
-
-    actions.get(id)
-    .then(action => {
-      res.status(200).json(action)  
-    })
-    .catch (err => {
-        console.log(err)
-        res.status(404).json({ error: "invalid action id"})
-    })
+  router.get('/:id', validateActionId, (req, res) => {
     
+      res.status(200).json(req.action)  
+        
   })
 
-  router.post('/',  (req, res) => {
+  router.post('/',  validateAction, (req, res) => {
     actions.insert(req.body)
   
     .then(action => {
@@ -41,7 +33,7 @@ router.get('/', (req, res) => {
     
   })
 
-  router.put('/:id', (req, res) => {
+  router.put('/:id', validateActionId, (req, res) => {
     actions.update(req.params.id, req.body)
   
     .then(action => {
@@ -57,7 +49,7 @@ router.get('/', (req, res) => {
     })
   })
 
-  router.delete('/:id', (req, res) => {
+  router.delete('/:id', validateActionId, (req, res) => {
     actions.remove(req.params.id)
   
     .then (count => {
@@ -72,5 +64,31 @@ router.get('/', (req, res) => {
       res.status(500).json({ errorMessage: "can not delete action"})
     })
   })
+
+  function validateActionId(req, res, next) {
+    const {id} = req.params
+
+    actions.get(id)
+      .then (action => {
+        req.action = action
+        next()
+      })
+      .catch (err => {
+        console.log (err)
+        res.status(400).json ({ message: "invalid action id"})
+      })
+  }
+
+  function validateAction(req, res, next) {
+    if( req.body.description && req.body.notes && req.body.completed) {
+      next()
+    } else if (!req.body.description) {
+      res.status (400).json({ message: "missing required description field"})
+    } else if (!req.body.notes){
+     res.status (400).json({ message: "missing required notes field"})
+    } else {
+      res.status (400).json({ message: "missing required completed field"})
+    }
+ }
 
 module.exports = router
